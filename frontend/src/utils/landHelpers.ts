@@ -3,7 +3,7 @@
 import lighthouse from "@lighthouse-web3/sdk";
 import kavach from "@lighthouse-web3/kavach";
 import { ethers } from "ethers";
-import LandNFTABI from "../abi/LandNFT.json";
+import LandNFTABI from "../../../artifacts/contracts/LandNFT.sol/LandNFT.json";
 
 /**
  * encryptAndMint:
@@ -46,7 +46,7 @@ export async function encryptAndMint(
   console.log("encryptAndMint: Signed auth:", signedAuth);
 
   // 3) textUploadEncrypted (Lighthouse already has your public key from step 1)
-  const apiKey = import.meta.env.VITE_LIGHTHOUSE_API_KEY;
+  const apiKey = process.env.VITE_LIGHTHOUSE_API_KEY;
   if (!apiKey) {
     throw new Error("Set VITE_LIGHTHOUSE_API_KEY in .env");
   }
@@ -81,7 +81,7 @@ export async function encryptAndMint(
   }
 
   // 4) Mint on-chain
-  const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS;
+  const contractAddress = process.env.VITE_CONTRACT_ADDRESS;
   if (!contractAddress) {
     throw new Error("Set VITE_CONTRACT_ADDRESS in .env");
   }

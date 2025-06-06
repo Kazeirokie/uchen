@@ -11,6 +11,8 @@
   "description": "",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
     "hardhat": "^2.24.2"
   },
   "dependencies": {

@@ -16,7 +16,7 @@ declare global {
 export default function App() {
   const [status, setStatus] = useState("Idle");
   // Make sure you have VITE_LIGHTHOUSE_API_KEY in your .env, and restart Vite after editing.
-  const apiKey = import.meta.env.VITE_LIGHTHOUSE_API_KEY as string;
+  const apiKey = process.env.VITE_LIGHTHOUSE_API_KEY as string;
 
   async function encryptHardcodedText() {
     if (!window.ethereum) {
