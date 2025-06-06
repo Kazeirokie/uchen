@@ -7,8 +7,15 @@
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": ["node", "hardhat"]  // ✅ Add "hardhat" here
   },
-  "include": ["scripts/**/*", "frontend/src/**/*"],
+  "include": [
+    "scripts/**/*",
+    "frontend/src/**/*",
+    "hardhat.config.ts"            // ✅ Optional: add if using TypeScript config
+  ],
   "exclude": ["node_modules"]
 }

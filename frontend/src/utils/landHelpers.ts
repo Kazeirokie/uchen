@@ -3,7 +3,7 @@
 import lighthouse from "@lighthouse-web3/sdk";
 import kavach from "@lighthouse-web3/kavach";
 import { ethers } from "ethers";
-import LandNFTABI from "../../../artifacts/contracts/LandNFT.sol/LandNFT.json";
+import LandNFTABI from "../../../artifacts/contracts/LandNFT.sol/LandNFT.json" with { type: "json" };
 
 /**
  * encryptAndMint:
