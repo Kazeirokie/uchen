@@ -69,10 +69,11 @@ export default function App() {
       }
       setStatus("✅ Obtained Kavach JWT");
 
-      // ─── Step 4: Call textUploadEncrypted(...) with the JWT ────────
+      // ─── Step 4: Call textUploadEncrypted(...) with the signed challenge ───
       //
-      //    Signature argument for textUploadEncrypted is now the Kavach JWT,
-      //    NOT the raw ECDSA signature. Because the JWT embeds your shards.
+      //    Lighthouse expects the raw ECDSA signature from the Kavach
+      //    challenge. The JWT returned above can be saved for later use, but
+      //    textUploadEncrypted should receive the signed challenge itself.
       //
       const yourText = JSON.stringify({
         StreetNumber:  123,
@@ -88,7 +89,7 @@ export default function App() {
         yourText,
         apiKey,
         address,         // MUST be your 0x… address
-        JWT,             // Kavach JWT goes here (not raw signature)
+        signedSignature, // raw ECDSA signature from Kavach challenge
         "land-metadata"  // a short “filename”/label so it isn’t undefined
       );
 
