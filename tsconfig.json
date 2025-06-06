@@ -15,7 +15,7 @@
   "include": [
     "scripts/**/*",
     "frontend/src/**/*",
-    "hardhat.config.ts"            // ✅ Optional: add if using TypeScript config
+    "hardhat.config.mjs"            // ✅ Optional: add if using TypeScript config
   ],
   "exclude": ["node_modules"]
 }
