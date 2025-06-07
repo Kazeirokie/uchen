@@ -1,25 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import lighthouse from '@lighthouse-web3/sdk';
 import kavach from '@lighthouse-web3/kavach';
+import abiJson from '../../artifacts/contracts/LandNFT.sol/LandNFT.json';
 
 // Constants (replace with your .env values)
 const LIGHTHOUSE_API_KEY = "01eba46e.2c8d8ac61ba3451aaa26945e075c88b8";
-const CONTRACT_ADDRESS   = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-
+const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+const abi = abiJson.abi;
 export default function ReEncrypt() {
   const [status, setStatus] = useState('Idle');
   const [oldCid, setOldCid] = useState('');
   const [encryptedCid, setEncryptedCid] = useState('');
   const [decryptedPayload, setDecryptedPayload] = useState<any>(null);
-  const [lands, setLands] = useState<{ id: string; uri: string }[]>([]);
+  const [lands, setLands] = useState<{ id: string; uri: string; key: string }[]>([]);
 
   // Metadata inputs
   const [streetNumber, setStreetNumber] = useState('');
-  const [streetName, setStreetName]     = useState('');
-  const [region, setRegion]             = useState('');
-  const [city, setCity]                 = useState('');
-  const [stateVal, setStateVal]         = useState('');
+  const [streetName, setStreetName] = useState('');
+  const [region, setRegion] = useState('');
+  const [city, setCity] = useState('');
+  const [stateVal, setStateVal] = useState('');
 
   // Transfer inputs
   const [transferCid, setTransferCid] = useState('');
@@ -32,15 +33,15 @@ export default function ReEncrypt() {
     return signer.signMessage(authResp.message);
   }
 
- // Encrypt metadata & mint NFT
+  // Encrypt metadata & mint NFT
   async function encryptAndMint() {
     try {
       if (!window.ethereum) throw new Error('MetaMask not found');
       setStatus('⏳ Connecting wallet…');
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.BrowserProvider(window.ethereum as any);
-      const signer   = await provider.getSigner();
-      const govAddr  = await signer.getAddress();
+      const signer = await provider.getSigner();
+      const govAddr = await signer.getAddress();
 
       setStatus('⏳ Signing Kavach challenge…');
       const challenge = (await kavach.getAuthMessage(govAddr)).message!;
@@ -48,11 +49,11 @@ export default function ReEncrypt() {
 
       const metadata = {
         StreetNumber: Number(streetNumber),
-        StreetName:   streetName,
-        Region:       region,
-        City:         city,
-        State:        stateVal,
-        timestamp:    Math.floor(Date.now() / 1000),
+        StreetName: streetName,
+        Region: region,
+        City: city,
+        State: stateVal,
+        timestamp: Math.floor(Date.now() / 1000),
       };
 
       setStatus('⏳ Encrypting & uploading metadata…');
@@ -74,12 +75,12 @@ export default function ReEncrypt() {
       setStatus(`✅ Metadata encrypted: ${cid}`);
 
       setStatus('⏳ Minting Land NFT…');
-      const abi = [
-        'function mintLand(string) public',
-        'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)',
-        'function balanceOf(address) view returns (uint256)',
-        'function tokenURI(uint256) view returns (string)',
-      ];
+      // const abi = [
+      //   'function mintLand(string) public',
+      //   'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)',
+      //   'function balanceOf(address) view returns (uint256)',
+      //   'function tokenURI(uint256) view returns (string)',
+      // ];
       const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
       const tx = await contract.mintLand(cid);
       await tx.wait();
@@ -88,10 +89,17 @@ export default function ReEncrypt() {
       const balance = await contract.balanceOf(govAddr);
       const tokenId = (balance - 1n).toString();
 
-    setStatus(`⏳ Fetching tokenURI for ID ${tokenId}…`);
-    const uri = await contract.tokenURI(tokenId);
-    setLands(prev => [{ id: tokenId, uri }, ...prev]);
-    setStatus(`✅ Minted Land ${tokenId} with URI ${uri}`);
+      setStatus(`⏳ Fetching tokenURI for ID ${tokenId}…`);
+      const uri = await contract.tokenURI(tokenId);
+      setLands(prev => [
+        {
+          id: tokenId,
+          uri,
+          key: crypto.randomUUID(),    // <-- unique, never duplicates
+        },
+        ...prev
+      ]);
+      setStatus(`✅ Minted Land ${tokenId} with URI ${uri}`);
 
     } catch (err: any) {
       console.error(err);
@@ -110,8 +118,12 @@ export default function ReEncrypt() {
       setStatus('⏳ Connecting wallet…');
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.BrowserProvider(window.ethereum as any);
-      const signer   = await provider.getSigner();
-      const addr     = await signer.getAddress();
+      console.log(
+        "on-chain bytecode:",
+        await provider.getCode(CONTRACT_ADDRESS)
+      );
+      const signer = await provider.getSigner();
+      const addr = await signer.getAddress();
 
       setStatus('⏳ Signing Kavach challenge…');
       const signature = await signAuthMessage(addr, signer);
@@ -143,8 +155,8 @@ export default function ReEncrypt() {
       setStatus('⏳ Connecting wallet…');
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.BrowserProvider(window.ethereum as any);
-      const signer   = await provider.getSigner();
-      const govAddr  = await signer.getAddress();
+      const signer = await provider.getSigner();
+      const govAddr = await signer.getAddress();
 
       setStatus('⏳ Signing Kavach challenge…');
       const sig = await signAuthMessage(govAddr, signer);
@@ -159,42 +171,88 @@ export default function ReEncrypt() {
       setStatus('❌ Transfer error: ' + (err.message || String(err)));
     }
   }
-
-// New ERC-721 on-chain enumeration
-async function fetchMyLands() {
-  try {
-    setStatus('⏳ Fetching your lands…');
-    if (!window.ethereum) throw new Error('MetaMask not found');
+  async function purchaseLand(tokenId: string) {
+    setStatus(`⏳ Purchasing token #${tokenId}…`);
+    if (!window.ethereum) {
+      setStatus('❌ MetaMask not found');
+      return;
+    }
     await window.ethereum.request({ method: 'eth_requestAccounts' });
     const provider = new ethers.BrowserProvider(window.ethereum as any);
-    const signer   = await provider.getSigner();
-    const user     = await signer.getAddress();
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(
+      CONTRACT_ADDRESS,
+      ['function purchaseLand(uint256) external'],
+      signer
+    );
+    const tx = await contract.purchaseLand(tokenId);
+    await tx.wait();
+    setStatus(`✅ Purchased token #${tokenId}!`);
+    await fetchMyLands();
+  }
 
-    // ERC-721 Enumerable methods
-    const abi = [
-      'function balanceOf(address) view returns (uint256)',
-      'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)',
-      'function tokenURI(uint256) view returns (string)'
-    ];
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider);
 
-    // Get count and iterate
-    const balanceBN = await contract.balanceOf(user);
-    const balance   = Number(balanceBN);
-    const list: { id: string; uri: string }[] = [];
-    for (let i = 0; i < balance; i++) {
-      const tokenId = await contract.tokenOfOwnerByIndex(user, i);
-      const uri     = await contract.tokenURI(tokenId);
-      list.push({ id: tokenId.toString(), uri });
+  // New ERC-721 on-chain enumeration
+  async function fetchMyLands() {
+    try {
+      setStatus('⏳ Fetching your lands…');
+      if (!window.ethereum) throw new Error('MetaMask not found');
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const provider = new ethers.BrowserProvider(window.ethereum as any);
+      const signer = await provider.getSigner();
+      const user = await signer.getAddress();
+
+      // const abi = [
+      //   'function balanceOf(address) view returns (uint256)',
+      //   'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)',
+      //   'function tokenURI(uint256) view returns (string)'
+      // ];
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider);
+
+      const balanceBN = await contract.balanceOf(user);
+      const balance = Number(balanceBN);
+      const list: { id: string; uri: string; key: string }[] = [];
+      for (let i = 0; i < balance; i++) {
+        const tokenId = await contract.tokenOfOwnerByIndex(user, i);
+        const uri = await contract.tokenURI(tokenId);
+        list.push({ id: tokenId.toString(), uri, key: crypto.randomUUID() });
+      }
+
+      setLands(list);
+      setStatus(`✅ Found ${list.length} land(s)`);
+    } catch (err: any) {
+      console.error(err);
+      setStatus('❌ Fetch lands error: ' + (err.message || String(err)));
+    }
+  }
+
+  useEffect(() => {
+    // subscribe to Transfer → refresh list
+    let contract: ethers.Contract;
+    async function setupListener() {
+      if (!window.ethereum) return;
+      const provider = new ethers.BrowserProvider(window.ethereum as any);
+      const signer = await provider.getSigner();
+      const user = await signer.getAddress();
+
+      // const abi = [
+      //   'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)'
+      // ];
+      contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider);
+
+      contract.on('Transfer', (from: string, to: string, tokenId: number) => {
+        if (from === user || to === user) {
+          fetchMyLands().catch(console.error);
+        }
+      });
     }
 
-    setLands(list);
-    setStatus(`✅ Found ${list.length} land(s)`);
-  } catch (err: any) {
-    console.error(err);
-    setStatus('❌ Fetch lands error: ' + (err.message || String(err)));
-  }
-}
+    setupListener();
+    return () => {
+      if (contract) contract.removeAllListeners('Transfer');
+    };
+  }, []);
+
 
 
   return (
@@ -205,10 +263,10 @@ async function fetchMyLands() {
         <h3>Encrypt & Mint New Land</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <input placeholder="Street Number" value={streetNumber} onChange={e => setStreetNumber(e.target.value)} style={{ padding: 8 }} />
-          <input placeholder="Street Name"   value={streetName}   onChange={e => setStreetName(e.target.value)}   style={{ padding: 8 }} />
-          <input placeholder="Region"        value={region}       onChange={e => setRegion(e.target.value)}         style={{ padding: 8 }} />
-          <input placeholder="City"          value={city}         onChange={e => setCity(e.target.value)}           style={{ padding: 8 }} />
-          <input placeholder="State"         value={stateVal}     onChange={e => setStateVal(e.target.value)}       style={{ padding: 8 }} />
+          <input placeholder="Street Name" value={streetName} onChange={e => setStreetName(e.target.value)} style={{ padding: 8 }} />
+          <input placeholder="Region" value={region} onChange={e => setRegion(e.target.value)} style={{ padding: 8 }} />
+          <input placeholder="City" value={city} onChange={e => setCity(e.target.value)} style={{ padding: 8 }} />
+          <input placeholder="State" value={stateVal} onChange={e => setStateVal(e.target.value)} style={{ padding: 8 }} />
         </div>
         <button onClick={encryptAndMint} style={{ marginTop: 8, padding: '8px 16px' }}>
           Encrypt & Mint
@@ -256,7 +314,7 @@ async function fetchMyLands() {
         </button>
       </section>
 
-      <section>
+      {/* <section>
         <h3>Your Lands</h3>
         <button onClick={fetchMyLands} style={{ padding: '8px 16px', marginBottom: 8 }}>
           Fetch My Lands
@@ -271,9 +329,29 @@ async function fetchMyLands() {
             ))}
           </ul>
         ) : (<p>No lands loaded yet.</p>)}
+      </section> */}
+
+
+      <section>
+        <h3>Your Lands </h3>
+        <button onClick={fetchMyLands}>Fetch My Lands</button>
+        {lands.length > 0 ? (
+          <ul>
+            {lands.map(land => (
+              <li key={land.key} style={{ margin: '4px 0' }}>
+                <strong>ID:</strong> {land.id}<br />
+                <strong>URI:</strong> <a href={land.uri}>{land.uri}</a>
+                <button onClick={() => purchaseLand(land.id)}>Purchase</button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No lands to show.</p>
+        )}
       </section>
 
       <p style={{ marginTop: 24 }}><strong>Status:</strong> {status}</p>
     </div>
   );
 }
+
