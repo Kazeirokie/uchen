@@ -1,14 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App'
-import Decrypt from './Decrypt'
-import  TransferOwnership  from './TransferOwnership'
+import Homepage from './Homepage'
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
-    <Decrypt />
-    <TransferOwnership />
+    <Homepage />
   </StrictMode>,
 )
