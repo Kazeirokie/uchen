@@ -72,7 +72,8 @@ export default function App() {
       // ─── Step 4: Call textUploadEncrypted(...) with the signed challenge ───
       //
       //    Lighthouse expects the raw ECDSA signature from the Kavach
-      //    challenge. The JWT returned above can be saved for later use, but
+      //    challenge along with your uncompressed public key. The JWT
+      //    returned above can be saved for later use, but
       //    textUploadEncrypted should receive the signed challenge itself.
       //
       const yourText = JSON.stringify({
@@ -85,10 +86,13 @@ export default function App() {
       });
 
       setStatus("⏳ Encrypting & uploading text…");
+      // Derive the uncompressed public key (0x04… hex) for encryption
+      const publicKey = await signer.getPublicKey();
+
       const uploadResponse: any = await lighthouse.textUploadEncrypted(
         yourText,
         apiKey,
-        address,         // MUST be your 0x… address
+        publicKey,       // uncompressed 0x04… key for saveShards
         signedSignature, // raw ECDSA signature from Kavach challenge
         "land-metadata"  // a short “filename”/label so it isn’t undefined
       );
