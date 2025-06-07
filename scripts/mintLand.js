@@ -40,18 +40,18 @@ async function signAuthMessage(ethAddress, wallet) {
 
 async function main() {
   // ==== A) Build Gov’s Wallet from .env + connect to Hardhat’s provider ====
-  const rawKey = process.env.GOV_PRIVATE_KEY;
-  if (!rawKey) {
+  const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+  if (!privateKey) {
     throw new Error("Please set GOV_PRIVATE_KEY in your .env");
   }
 
   // Create a Wallet using Hardhat’s provider
-  const govWallet  = new ethers.Wallet(rawKey, ethers.provider);
+  const govWallet  = new ethers.Wallet(privateKey, ethers.provider);
   const govAddress = await govWallet.getAddress();
   console.log("Gov address (from .env):", govAddress);
 
   // ==== C) Attach to deployed LandNFT contract with govWallet as signer ====
-  const LAND_CONTRACT_ADDR = process.env.CONTRACT_ADDRESS;
+  const LAND_CONTRACT_ADDR = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const LandNFT = await ethers.getContractAt(
     "LandNFT",
     LAND_CONTRACT_ADDR,
@@ -82,11 +82,11 @@ async function main() {
   console.log("Payload to upload:", payload);
 
   // ==== E) Upload & Encrypt via Lighthouse.textUploadEncrypted ====
-  const apiKey = process.env.LIGHTHOUSE_API_KEY;
-  if (!apiKey) {
+  const lighthouseAPIKey = "01eba46e.2c8d8ac61ba3451aaa26945e075c88b8";
+  if (!lighthouseAPIKey) {
     throw new Error("Please set LIGHTHOUSE_API_KEY in your .env");
   }
-  console.log("Using LIGHTHOUSE_API_KEY prefix:", apiKey.slice(0, 6) + "...");
+  console.log("Using LIGHTHOUSE_API_KEY prefix:", lighthouseAPIKey.slice(0, 6) + "...");
 
   // Sign Kavach’s auth challenge using Gov’s Ethereum address
   let signedAuthMsg;
@@ -102,16 +102,15 @@ async function main() {
   // Debug logs
   console.log("Payload:", payload);
   console.log("GovAddress (for saveShards):", govAddress);
-  console.log("GovPubkey (for encryption):", govPubkey);
   console.log("SignedAuthMsg:", signedAuthMsg);
 
   let encryptedCID;
   try {
     // ── Pass govAddress (not govPubkey) into textUploadEncrypted as the “address” param ──
-    // textUploadEncrypted(text, apiKey, address, signedMessage, name)
+    // textUploadEncrypted(text, lighthouseAPIKey, address, signedMessage, name)
     const uploadResponse = await lighthouse.textUploadEncrypted(
       payload,
-      apiKey,
+      lighthouseAPIKey,
       govAddress,    // ← use the Ethereum address here for saveShards
       signedAuthMsg,
       "land-meta-gov"

@@ -81,35 +81,36 @@ export default function App() {
         ethers.hashMessage(challenge),
         signedSignature
       );
-      const publicKey = recoveredPubKey; // This will be the uncompressed 0x04… key
-      console.log("Recovered public key:", publicKey);
+      // const publicKey = recoveredPubKey; // This will be the uncompressed 0x04… key
+      // console.log("Recovered public key:", publicKey);
       console.log("Public key (uncompressed):", address);
       console.log("Signed signature:", signedSignature);
-      const uploadResponse: any = await lighthouse.textUploadEncrypted(
-        yourText,
-        apiKey,
-        address, 
-        signedSignature, // raw ECDSA signature from Kavach challenge
-        "land-metadata"  // a short “filename”/label so it isn’t undefined
-      );
+// Browser-only: recover & pass your uncompressed ECIES key
+const signature = await signer.signMessage(challenge)
+const publicKey = ethers.SigningKey.recoverPublicKey(
+  ethers.hashMessage(challenge),
+  signature
+)
 
-      // ─── Step 5: Check and read the IPFS CID ───────────────────────
-      console.log("uploadResponse:", uploadResponse);
-      let encryptedHash: string | undefined;
-      if (uploadResponse.data) {
-        if (Array.isArray(uploadResponse.data)) {
-          encryptedHash = uploadResponse.data[0]?.Hash;
-        } else {
-          encryptedHash = uploadResponse.data.Hash;
-        }
-      }
-      if (typeof encryptedHash !== "string") {
-        throw new Error(
-          "Unexpected Lighthouse response: " + JSON.stringify(uploadResponse)
-        );
-      }
-      setStatus(`✅ Encrypted text CID: ${encryptedHash}`);
-      console.log("Encrypted CID (browser):", encryptedHash);
+const uploadResponse = await lighthouse.textUploadEncrypted(
+  yourText,
+  apiKey,
+  address,    // ← full 0x04… key is required in the browser
+  signature,    // ← Kavach signature
+  "land-metadata"
+)
+      setStatus("✅ Text encrypted and uploaded");
+
+      // ─── Step 5: Extract the IPFS CID from the response ──────────────
+      const ipfsHash = uploadResponse.data[0].Hash; // This is the CID of your encrypted text
+      console.log("Upload response:", uploadResponse);
+      console.log("IPFS Hash:", ipfsHash);
+      setStatus("✅ Encrypted CID: " + ipfsHash);
+
+console.log("Extracted CID:", ipfsHash);  // should now log your Qm… hash
+
+
+
 
       // At this point you have an IPFS CID that is ECIES‐encrypted for “address.”
       // If you later want to decrypt, you’d call
