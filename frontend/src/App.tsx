@@ -37,42 +37,6 @@ export default function App() {
       return;
     }
 
-    ///////////// TEST ////////////
-
-      const provider = new ethers.BrowserProvider(window.ethereum as any);
-      const govWallet  = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", await provider);
-      interface KavachAuthResponse {
-        message?: string | null;
-        [key: string]: any;
-      }
-
-      async function signAuthMessage(
-        ethAddress: string,
-        wallet: ethers.Wallet
-      ): Promise<string> {
-        // (1) Ask Kavach for an auth challenge using the Ethereum address
-        const authResponse: KavachAuthResponse = await kavach.getAuthMessage(ethAddress);
-
-        // (2) Extract the challenge string (either authResponse.data.message or authResponse.message)
-        let challengeMessage: string;
-        if (typeof authResponse.message === "string") {
-          challengeMessage = authResponse.message;
-        } else {
-          throw new Error(
-        "Invalid Kavach auth response. Expected a message string.\n" +
-        "Full response:\n" +
-        JSON.stringify(authResponse, null, 2)
-          );
-        }
-
-        // (3) Use Gov’s wallet to sign the challenge string
-        return await wallet.signMessage(challengeMessage);
-      }
-
-    
-
-      /////////////////////////////////////
-
 
     try {
       // ─── Step 1: Connect to MetaMask ──────────────────────────────
@@ -83,20 +47,6 @@ export default function App() {
       const address  = await signer.getAddress();
       setStatus(`✅ Connected as ${address}`);
 
-
-      ///////////////////////////
-
-          // Sign Kavach’s auth challenge using Gov’s Ethereum address
-      let signedAuthMsg;
-      try {
-        signedAuthMsg = await signAuthMessage(address, govWallet);
-      } catch (e) {
-        console.error("❌ Failed to get/sign Kavach auth message:", e);
-        process.exit(1);
-      }
-
-      ///////////////////////////
-
       // ─── Step 2: Ask Kavach for a challenge and sign it ────────────
       setStatus("⏳ Fetching Kavach challenge…");
       const authResp = await kavach.getAuthMessage(address);
@@ -105,20 +55,7 @@ export default function App() {
       const signedSignature: string = await signer.signMessage(challenge);
       setStatus("✅ Kavach challenge signed");
 
-      // ─── Step 3: Exchange the signed challenge for a Kavach JWT ───
-      //
-      //    kavach.getJWT(address, signedSignature) returns { JWT, error }.
-      //    If `error` is non‐null, the JWT fetch failed.
-      //
-      setStatus("⏳ Retrieving Kavach JWT…");
-      const { JWT, error } = await kavach.getJWT(address, signedSignature);
-      if (error) {
-        throw new Error("Failed to get JWT: " + JSON.stringify(error));
-      }
-      if (!JWT) {
-        throw new Error("Kavach did not return a JWT.");
-      }
-      setStatus("✅ Obtained Kavach JWT");
+     
 
       // ─── Step 4: Call textUploadEncrypted(...) with the signed challenge ───
       //
@@ -151,8 +88,8 @@ export default function App() {
       const uploadResponse: any = await lighthouse.textUploadEncrypted(
         yourText,
         apiKey,
-        address,       // uncompressed 0x04… key for saveShards
-        signedAuthMsg, // raw ECDSA signature from Kavach challenge
+        address, 
+        signedSignature, // raw ECDSA signature from Kavach challenge
         "land-metadata"  // a short “filename”/label so it isn’t undefined
       );
 
