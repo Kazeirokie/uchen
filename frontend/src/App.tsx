@@ -95,12 +95,19 @@ export default function App() {
 
       // ─── Step 5: Check and read the IPFS CID ───────────────────────
       console.log("uploadResponse:", uploadResponse);
-      if (!uploadResponse.data || typeof uploadResponse.data.Hash !== "string") {
+      let encryptedHash: string | undefined;
+      if (uploadResponse.data) {
+        if (Array.isArray(uploadResponse.data)) {
+          encryptedHash = uploadResponse.data[0]?.Hash;
+        } else {
+          encryptedHash = uploadResponse.data.Hash;
+        }
+      }
+      if (typeof encryptedHash !== "string") {
         throw new Error(
           "Unexpected Lighthouse response: " + JSON.stringify(uploadResponse)
         );
       }
-      const encryptedHash = uploadResponse.data.Hash;
       setStatus(`✅ Encrypted text CID: ${encryptedHash}`);
       console.log("Encrypted CID (browser):", encryptedHash);
 
