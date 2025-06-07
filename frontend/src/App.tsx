@@ -54,25 +54,13 @@ export default function App() {
       const signedSignature: string = await signer.signMessage(challenge);
       setStatus("✅ Kavach challenge signed");
 
-      // ─── Step 3: Exchange the signed challenge for a Kavach JWT ───
+      // ─── Step 3: Call textUploadEncrypted(...) with the signed challenge ───
       //
-      //    kavach.getJWT(address, signedSignature) returns { JWT, error }.
-      //    If `error` is non‐null, the JWT fetch failed.
-      //
-      setStatus("⏳ Retrieving Kavach JWT…");
-      const { JWT, error } = await kavach.getJWT(address, signedSignature);
-      if (error) {
-        throw new Error("Failed to get JWT: " + JSON.stringify(error));
-      }
-      if (!JWT) {
-        throw new Error("Kavach did not return a JWT.");
-      }
-      setStatus("✅ Obtained Kavach JWT");
-
-      // ─── Step 4: Call textUploadEncrypted(...) with the JWT ────────
-      //
-      //    Signature argument for textUploadEncrypted is now the Kavach JWT,
-      //    NOT the raw ECDSA signature. Because the JWT embeds your shards.
+      //    Lighthouse's SDK expects the Ethereum address (not the raw
+      //    public key) alongside the signed challenge.  The JWT returned
+      //    from kavach.getJWT (if you need it) can be saved for later use,
+      //    but textUploadEncrypted should receive the ECDSA signature
+      //    itself.  This mirrors the working Node.js example.
       //
       const yourText = JSON.stringify({
         StreetNumber:  123,
@@ -84,15 +72,16 @@ export default function App() {
       });
 
       setStatus("⏳ Encrypting & uploading text…");
+
       const uploadResponse: any = await lighthouse.textUploadEncrypted(
         yourText,
         apiKey,
-        address,         // MUST be your 0x… address
-        JWT,             // Kavach JWT goes here (not raw signature)
+        address,         // your 0x… Ethereum address
+        signedSignature, // raw ECDSA signature from Kavach challenge
         "land-metadata"  // a short “filename”/label so it isn’t undefined
       );
 
-      // ─── Step 5: Check and read the IPFS CID ───────────────────────
+      // ─── Step 4: Check and read the IPFS CID ───────────────────────
       console.log("uploadResponse:", uploadResponse);
       if (!uploadResponse.data || typeof uploadResponse.data.Hash !== "string") {
         throw new Error(
