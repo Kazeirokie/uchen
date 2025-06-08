@@ -6,7 +6,7 @@ import abiJson from '../../artifacts/contracts/LandNFT.sol/LandNFT.json';
 
 // Constants (replace with your .env values)
 const LIGHTHOUSE_API_KEY = "01eba46e.2c8d8ac61ba3451aaa26945e075c88b8";
-const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const abi = abiJson.abi;
 export default function ReEncrypt() {
   const [status, setStatus] = useState('Idle');

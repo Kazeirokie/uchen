@@ -724,42 +724,6 @@
         "IERC721Receiver"
       ]
     },
-    "C:\\Users\\aminu\\OneDrive\\Documents\\GitHub\\uchen\\contracts\\Lock.sol": {
-      "lastModificationDate": 1749106204850,
-      "contentHash": "7eee587c347fe6b1de50c96688cb9477",
-      "sourceName": "contracts/Lock.sol",
-      "solcConfig": {
-        "version": "0.8.28",
-        "settings": {
-          "evmVersion": "paris",
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.28"
-      ],
-      "artifacts": [
-        "Lock"
-      ]
-    },
     "C:\\Users\\aminu\\OneDrive\\Documents\\GitHub\\uchen\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\extensions\\ERC721Enumerable.sol": {
       "lastModificationDate": 1749217987305,
       "contentHash": "bf1596648447152f4d3a5f5bc4444a6e",
